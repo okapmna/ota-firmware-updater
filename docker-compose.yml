@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    container_name: ota_app
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    networks:
+      - shared-network
+    volumes:
+      - ./firmware_storage:/app/firmware_storage
+
+networks:
+  shared-network:
+    name: unimonmq-dashboard_app-network
+    external: true
+
