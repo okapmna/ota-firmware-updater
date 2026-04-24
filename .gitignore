@@ -3,4 +3,5 @@ node_modules/
 firmware_storage/
 .agents/
 .vscode/
-    
+simulate_upload.js
+simulate_upload.sh
