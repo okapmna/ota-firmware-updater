@@ -13,15 +13,29 @@ async function initializeDatabase() {
     let conn;
     try {
         conn = await pool.getConnection();
+
+        await conn.query(`
+            CREATE TABLE IF NOT EXISTS device_types (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                type_name VARCHAR(50) NOT NULL UNIQUE,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         await conn.query(`
             CREATE TABLE IF NOT EXISTS firmwares (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 version VARCHAR(50) NOT NULL,
-                device_type VARCHAR(100) NOT NULL,
+                device_type_id INT NOT NULL,
                 filename VARCHAR(255) NOT NULL,
                 file_path VARCHAR(255) NOT NULL,
                 checksum VARCHAR(64),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT fk_firmware_device_type 
+                    FOREIGN KEY (device_type_id) 
+                    REFERENCES device_types(id) 
+                    ON DELETE RESTRICT ON UPDATE CASCADE
             )
         `);
         console.log('Database initialized successfully');
