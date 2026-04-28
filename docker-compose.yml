@@ -16,4 +16,3 @@ networks:
   shared-network:
     name: unimonmq-dashboard_app-network
     external: true
-
