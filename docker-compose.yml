@@ -15,5 +15,5 @@ services:
 # DB network Integrate with unimonMQ
 networks:
   shared-network:
-    name: unimonmq_app-network
+    name: unimonmq-dashboard_app-network
     external: true

@@ -52,30 +52,32 @@ router.post('/', auth, upload.single('firmware'), async (req, res) => {
     const finalPath = path.join(targetDir, finalFilename);
 
     try {
-        // Move file from temp to final destination
-        fs.renameSync(req.file.path, finalPath);
-        console.log(`File moved to: ${finalPath}`);
-
-        // Calculate checksum
-        const fileBuffer = fs.readFileSync(finalPath);
-        const hashSum = crypto.createHash('md5');
-        hashSum.update(fileBuffer);
-        const checksum = hashSum.digest('hex');
-
         let conn;
         try {
             conn = await pool.getConnection();
             
-            // 1. Get or Create device_type_id
+            // 1. Validate device_type exists
             let rows = await conn.query("SELECT id FROM device_types WHERE type_name = ?", [device_type]);
-            let deviceTypeId;
-
+            
             if (rows.length === 0) {
-                const result = await conn.query("INSERT INTO device_types (type_name) VALUES (?)", [device_type]);
-                deviceTypeId = result.insertId;
-            } else {
-                deviceTypeId = rows[0].id;
+                if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+                return res.status(400).json({ 
+                    status: 'error', 
+                    message: `Device type '${device_type}' is not registered. Please register it first.` 
+                });
             }
+            
+            const deviceTypeId = rows[0].id;
+
+            // Move file from temp to final destination
+            fs.renameSync(req.file.path, finalPath);
+            console.log(`File moved to: ${finalPath}`);
+
+            // Calculate checksum
+            const fileBuffer = fs.readFileSync(finalPath);
+            const hashSum = crypto.createHash('md5');
+            hashSum.update(fileBuffer);
+            const checksum = hashSum.digest('hex');
 
             // 2. Insert into firmwares table using device_type_id
             await conn.query(
@@ -96,17 +98,22 @@ router.post('/', auth, upload.single('firmware'), async (req, res) => {
                 }
             });
         } catch (err) {
-            console.error('Database error details:', err);
+            console.error('Database/Processing error details:', err);
+            // Cleanup finalPath if error happens after move
+            if (fs.existsSync(finalPath)) fs.unlinkSync(finalPath);
+            // Cleanup temp path if error happens before move
+            if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+            
             res.status(500).json({ 
                 status: 'error', 
-                message: 'Database error occurred',
+                message: 'An error occurred during upload processing',
                 details: err.message
             });
         } finally {
             if (conn) conn.release();
         }
     } catch (err) {
-        console.error('File operation error:', err);
+        console.error('Unexpected error:', err);
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         res.status(500).json({ status: 'error', message: 'Failed to process file' });
     }

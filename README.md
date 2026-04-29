@@ -1,15 +1,38 @@
 # ota-firmware-updater
 
-simple app for ota firmware updater
-- upload firmware
-- check firmware
-- download firmware
+Simple application for OTA firmware updates.
 
-how to run
-1. copy .env.example to .env
-2. edit .env to match your database configuration
-3. npm install
-4. npm run dev
-5. open browser and go to http://localhost:3000
-6. open terminal and go to http://localhost:3000/api/upload
-7. open terminal and go to http://localhost:3000/api/ota/check
+Features:
+- Upload firmware
+- Check firmware version
+- Download firmware
+
+## Setup Instructions
+
+### Option 1: Running Locally
+
+1. Copy the environment file:
+   cp .env.example .env
+
+2. Edit the `.env` file with your database configuration.
+
+3. Install dependencies:
+   npm install
+
+4. Start the development server:
+   npm run dev
+
+### Option 2: Running with Docker
+
+1. Copy the environment file:
+   cp .env.example .env
+
+2. Edit the `.env` file with your database configuration.
+
+3. Start the application:
+   docker compose up -d
+
+## Main Endpoints
+
+- POST /api/upload - Upload new firmware
+- GET /api/ota/check - Check for firmware updates
