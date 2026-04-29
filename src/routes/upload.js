@@ -7,9 +7,20 @@ const auth = require('../middleware/auth');
 const fs = require('fs');
 const crypto = require('crypto');
 
+// Helper to ensure directory exists
+const ensureDir = (dir) => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+};
+
+// Ensure temp directory exists
+const tempDir = path.join(__dirname, '../../firmware_storage/temp');
+ensureDir(tempDir);
+
 // Configure storage - Upload to a temp directory first
 const upload = multer({ 
-    dest: path.join(__dirname, '../../firmware_storage/temp'),
+    dest: tempDir,
     fileFilter: (req, file, cb) => {
         if (path.extname(file.originalname) !== '.bin') {
             return cb(new Error('Only .bin files are allowed'));
@@ -17,13 +28,6 @@ const upload = multer({
         cb(null, true);
     }
 });
-
-// Helper to ensure directory exists
-const ensureDir = (dir) => {
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-    }
-};
 
 // POST endpoint for Firmware Upload
 router.post('/', auth, upload.single('firmware'), async (req, res) => {
@@ -92,10 +96,12 @@ router.post('/', auth, upload.single('firmware'), async (req, res) => {
                 }
             });
         } catch (err) {
-            console.error('Database error:', err);
-            // If DB fails, we should probably delete the file or keep it? 
-            // For now, let's keep it but return error
-            res.status(500).json({ status: 'error', message: 'Database error occurred' });
+            console.error('Database error details:', err);
+            res.status(500).json({ 
+                status: 'error', 
+                message: 'Database error occurred',
+                details: err.message
+            });
         } finally {
             if (conn) conn.release();
         }
