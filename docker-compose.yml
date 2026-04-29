@@ -12,7 +12,8 @@ services:
     volumes:
       - ./firmware_storage:/app/firmware_storage
 
+# DB network Integrate with unimonMQ
 networks:
   shared-network:
-    name: unimonmq-dashboard_app-network
+    name: unimonmq_app-network
     external: true
