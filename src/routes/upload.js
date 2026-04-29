@@ -7,29 +7,9 @@ const auth = require('../middleware/auth');
 const fs = require('fs');
 const crypto = require('crypto');
 
-// Configure storage
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const deviceType = req.body.device_type || 'unknown';
-        const dir = path.join(__dirname, '../../firmware_storage', deviceType);
-        
-        // Create directory automatically based on device type
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-        const version = req.body.version || 'v1.0.0';
-        const deviceType = req.body.device_type || 'esp32';
-        const ext = path.extname(file.originalname);
-        // Clean filename: deviceType_version_timestamp.bin
-        cb(null, `${deviceType}_${version}_${Date.now()}${ext}`);
-    }
-});
-
+// Configure storage - Upload to a temp directory first
 const upload = multer({ 
-    storage: storage,
+    dest: path.join(__dirname, '../../firmware_storage/temp'),
     fileFilter: (req, file, cb) => {
         if (path.extname(file.originalname) !== '.bin') {
             return cb(new Error('Only .bin files are allowed'));
@@ -38,6 +18,13 @@ const upload = multer({
     }
 });
 
+// Helper to ensure directory exists
+const ensureDir = (dir) => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+};
+
 // POST endpoint for Firmware Upload
 router.post('/', auth, upload.single('firmware'), async (req, res) => {
     if (!req.file) {
@@ -45,57 +32,77 @@ router.post('/', auth, upload.single('firmware'), async (req, res) => {
     }
 
     const { version, device_type } = req.body;
+    console.log(`Received upload request: device=${device_type}, version=${version}`);
     
     if (!version || !device_type) {
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         return res.status(400).json({ status: 'error', message: 'Version and device_type are required' });
     }
 
-    // Calculate checksum
-    const fileBuffer = fs.readFileSync(req.file.path);
-    const hashSum = crypto.createHash('md5');
-    hashSum.update(fileBuffer);
-    const checksum = hashSum.digest('hex');
+    // Determine final path
+    const targetDir = path.join(__dirname, '../../firmware_storage', device_type);
+    ensureDir(targetDir);
 
-    let conn;
+    const ext = path.extname(req.file.originalname);
+    const finalFilename = `${device_type}_${version}_${Date.now()}${ext}`;
+    const finalPath = path.join(targetDir, finalFilename);
+
     try {
-        conn = await pool.getConnection();
-        
-        // 1. Get or Create device_type_id
-        let rows = await conn.query("SELECT id FROM device_types WHERE type_name = ?", [device_type]);
-        let deviceTypeId;
+        // Move file from temp to final destination
+        fs.renameSync(req.file.path, finalPath);
+        console.log(`File moved to: ${finalPath}`);
 
-        if (rows.length === 0) {
-            const result = await conn.query("INSERT INTO device_types (type_name) VALUES (?)", [device_type]);
-            deviceTypeId = result.insertId;
-        } else {
-            deviceTypeId = rows[0].id;
-        }
+        // Calculate checksum
+        const fileBuffer = fs.readFileSync(finalPath);
+        const hashSum = crypto.createHash('md5');
+        hashSum.update(fileBuffer);
+        const checksum = hashSum.digest('hex');
 
-        // 2. Insert into firmwares table using device_type_id
-        await conn.query(
-            "INSERT INTO firmwares (version, device_type_id, filename, file_path, checksum) VALUES (?, ?, ?, ?, ?)",
-            [version, deviceTypeId, req.file.filename, req.file.path, checksum]
-        );
+        let conn;
+        try {
+            conn = await pool.getConnection();
+            
+            // 1. Get or Create device_type_id
+            let rows = await conn.query("SELECT id FROM device_types WHERE type_name = ?", [device_type]);
+            let deviceTypeId;
 
-        res.status(201).json({
-            status: 'success',
-            message: `Firmware uploaded successfully to folder: ${device_type}`,
-            data: {
-                version,
-                device_type,
-                device_type_id: deviceTypeId,
-                filename: req.file.filename,
-                checksum,
-                storage_path: req.file.path
+            if (rows.length === 0) {
+                const result = await conn.query("INSERT INTO device_types (type_name) VALUES (?)", [device_type]);
+                deviceTypeId = result.insertId;
+            } else {
+                deviceTypeId = rows[0].id;
             }
-        });
+
+            // 2. Insert into firmwares table using device_type_id
+            await conn.query(
+                "INSERT INTO firmwares (version, device_type_id, filename, file_path, checksum) VALUES (?, ?, ?, ?, ?)",
+                [version, deviceTypeId, finalFilename, finalPath, checksum]
+            );
+
+            res.status(201).json({
+                status: 'success',
+                message: `Firmware uploaded successfully to folder: ${device_type}`,
+                data: {
+                    version,
+                    device_type,
+                    device_type_id: deviceTypeId,
+                    filename: finalFilename,
+                    checksum,
+                    storage_path: finalPath
+                }
+            });
+        } catch (err) {
+            console.error('Database error:', err);
+            // If DB fails, we should probably delete the file or keep it? 
+            // For now, let's keep it but return error
+            res.status(500).json({ status: 'error', message: 'Database error occurred' });
+        } finally {
+            if (conn) conn.release();
+        }
     } catch (err) {
-        console.error('Database error:', err);
+        console.error('File operation error:', err);
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
-        res.status(500).json({ status: 'error', message: 'Internal Server Error' });
-    } finally {
-        if (conn) conn.release();
+        res.status(500).json({ status: 'error', message: 'Failed to process file' });
     }
 });
 
