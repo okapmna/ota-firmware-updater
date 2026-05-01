@@ -1,0 +1,134 @@
+:root {
+    --primary: #34495e;
+    --bg: #f4f7f6;
+    --text: #2c3e50;
+    --border: #dcdde1;
+    --link: #2980b9;
+    --link-hover: #1a5276;
+    --section-bg: #eeeeee;
+    --card-bg: #ffffff;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 20px;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+h1 {
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 12px;
+    margin-top: 0;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.device-section {
+    margin-bottom: 40px;
+}
+
+.device-header {
+    background: var(--section-bg);
+    padding: 10px 15px;
+    font-weight: 600;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--primary);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+th, td {
+    text-align: left;
+    padding: 14px 15px;
+    border-bottom: 1px solid var(--border);
+}
+
+th {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #7f8c8d;
+    letter-spacing: 0.5px;
+}
+
+.filename {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    color: var(--link);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.filename:hover {
+    color: var(--link-hover);
+    text-decoration: underline;
+}
+
+.badge {
+    display: inline-block;
+    padding: 3px 10px;
+    background: #e1f5fe;
+    color: #0288d1;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 1px solid #b3e5fc;
+}
+
+.checksum {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.75rem;
+    color: #7f8c8d;
+    background: #f8f9fa;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #eaebed;
+}
+
+.date-col {
+    white-space: nowrap;
+    color: #636e72;
+    font-size: 0.9rem;
+}
+
+footer {
+    margin-top: 50px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 0.85rem;
+    color: #95a5a6;
+}
+
+@media (max-width: 768px) {
+    .hide-mobile {
+        display: none;
+    }
+    .container {
+        padding: 20px 15px;
+    }
+    th, td {
+        padding: 12px 10px;
+    }
+}

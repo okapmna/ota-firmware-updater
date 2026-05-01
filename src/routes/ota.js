@@ -48,14 +48,30 @@ router.get('/check', async (req, res) => {
 });
 
 // Download firmware
-router.get('/download/:filename', (req, res) => {
+router.get('/download/:filename', async (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(__dirname, '../../firmware_storage', filename);
+    
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        const rows = await conn.query("SELECT file_path FROM firmwares WHERE filename = ?", [filename]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ status: 'error', message: 'Firmware record not found' });
+        }
 
-    if (fs.existsSync(filePath)) {
-        res.download(filePath);
-    } else {
-        res.status(404).json({ status: 'error', message: 'Firmware file not found' });
+        const filePath = rows[0].file_path;
+
+        if (fs.existsSync(filePath)) {
+            res.download(filePath);
+        } else {
+            res.status(404).json({ status: 'error', message: 'Firmware file missing on disk' });
+        }
+    } catch (err) {
+        console.error('Download error:', err);
+        res.status(500).json({ status: 'error', message: 'Internal Server Error' });
+    } finally {
+        if (conn) conn.release();
     }
 });
 

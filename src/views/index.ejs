@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OTA Firmware Releases</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            Firmware Releases
+        </h1>
+        
+        <% if (Object.keys(grouped).length === 0) { %>
+            <p>No firmware releases found.</p>
+        <% } %>
+
+        <% for (const [deviceType, releases] of Object.entries(grouped)) { %>
+            <div class="device-section">
+                <div class="device-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="15" x2="23" y2="15"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="15" x2="4" y2="15"></line></svg>
+                    <%= deviceType %>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th class="hide-mobile">Version</th>
+                            <th class="hide-mobile">Release Date</th>
+                            <th class="hide-mobile">MD5 Checksum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% releases.forEach(f => { %>
+                            <tr>
+                                <td>
+                                    <a href="/api/ota/download/<%= f.filename %>" class="filename" title="Download <%= f.filename %>">
+                                        <%= f.filename %>
+                                    </a>
+                                    <div class="meta mobile-only" style="display:none">
+                                        v<%= f.version %> • <%= new Date(f.created_at).toLocaleDateString() %>
+                                    </div>
+                                </td>
+                                <td class="hide-mobile"><span class="badge">v<%= f.version %></span></td>
+                                <td class="hide-mobile" title="<%= f.created_at %>">
+                                    <%= new Date(f.created_at).toLocaleDateString() %>
+                                </td>
+                                <td class="hide-mobile">
+                                    <code class="checksum"><%= f.checksum %></code>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } %>
+
+        <footer>
+            OTA Firmware Updater &copy; <%= new Date().getFullYear() %>
+        </footer>
+    </div>
+</body>
+</html>

@@ -15,20 +15,19 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Static files for firmware (optional, handled by route download)
-// app.use('/firmwares', express.static(path.join(__dirname, '../firmware_storage')));
+// Set EJS as the view engine
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
-// Routes
+// Static files
+app.use(express.static(path.join(__dirname, 'public')));
+
+// View Routes
+const viewRoutes = require('./routes/view');
+app.use('/', viewRoutes);
+
+// API Routes
 app.use('/api', routes);
-
-// Root route
-app.get('/', (req, res) => {
-    res.json({
-        name: 'OTA Firmware Updater API',
-        version: '1.0.0',
-        status: 'running'
-    });
-});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
