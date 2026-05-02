@@ -18,10 +18,14 @@ router.get('/check', async (req, res) => {
     try {
         conn = await pool.getConnection();
         // Get the latest firmware for this device type
-        const rows = await conn.query(
-            "SELECT * FROM firmwares WHERE device_type = ? ORDER BY created_at DESC LIMIT 1",
-            [deviceType]
-        );
+        const rows = await conn.query(`
+            SELECT f.* 
+            FROM firmwares f
+            JOIN device_types dt ON f.device_type_id = dt.id
+            WHERE dt.type_name = ?
+            ORDER BY f.created_at DESC 
+            LIMIT 1
+        `, [deviceType]);
 
         if (rows.length === 0) {
             return res.status(404).json({ status: 'no_update', message: 'No firmware found for this device' });
